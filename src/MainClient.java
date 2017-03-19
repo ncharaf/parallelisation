@@ -16,7 +16,7 @@ public class MainClient {
 		// TODO Auto-generated method stub
 		Double memory=getMemory();
 		String hostname=System.getProperty("user.name");
-		System.out.println(hostname);
+		//System.out.println(hostname);
 		Double frequency=getFrequency();
 		int cores = Runtime.getRuntime().availableProcessors();
 		String os=System.getProperty("os.name");
@@ -127,8 +127,19 @@ public class MainClient {
 
 				//2ème ligne pour récuperer la vitesse max
 				line= systemInformationReader.readLine();
+				Double max_frequency;
+				if(line!=null){
 				String [] second_line=line.split(":");
-				Double max_frequency= Double.parseDouble(second_line[1].trim());
+				max_frequency= Double.parseDouble(second_line[1].trim());
+				}else{
+				String[] cmd1 = {"/bin/sh","-c","cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq"};
+				process=runtime.exec(cmd1);
+				systemInformationReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+				line= systemInformationReader.readLine();
+				max_frequency=Double.parseDouble(line);
+				max_frequency/=1000;
+				}
+				
 				Double  frequency = (current_frequency*1.0)/max_frequency;
 				if(frequency>1 || frequency<=0){
 					throw new Error("Erreur calcul frequence");				
