@@ -1,110 +1,41 @@
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.PrintWriter;
-import java.net.ConnectException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
-import searchEngine.Document;
-import searchEngine.Keyword;
-import searchEngine.Test;
 
 
 /*
  * 
- * Cette Classe Client qui va permettre la connexion au serveur
- * Son but c'est d'initialiser la connexion et on a pensé à ça pour éviter  
- *  trop de résponsabilité dans la classe Handle  c'est à dire 
- * d'initaliser la connexion  et de faire le calcul
- * 
- * 
+ * This class will establish a connection between the client and the server.
+ * Then, it will create a Service, that will deal with all the treatments.
  * 
  */
 
-public class Client {
+public class Client{
+
 	private Socket connexion;
-	private ObjectOutputStream toServer ;
-	private ObjectInputStream fromServer;
+	private Service s;
+
 
 
 	public Client(int port,String adressIP){
+		int timeoutTime=5;
 		try {
-			this.connexion=new Socket(adressIP, port);
-			try {
-				toServer = new ObjectOutputStream(this.connexion.getOutputStream());
-				fromServer = new ObjectInputStream(this.connexion.getInputStream());
-				System.out.println("OK!");
-				Object obj;
-				try {
-					obj = fromServer.readObject();
-					if(obj.getClass().equals(TreeMap.class)){
-						TreeMap<String,Keyword> keywords=(TreeMap<String,Keyword>) obj;
-						System.out.println("obj");
-						Object obj1;
-						obj1=fromServer.readObject();
-						System.out.println("obj1");
-						if(obj1.getClass().equals(TreeMap.class)){
-							TreeMap<Integer, Document> documents=(TreeMap<Integer, Document>)obj1	;
-							Object obj2=fromServer.readObject();
-							System.out.println("obj2"+obj2.getClass());
-							if(obj2.getClass().equals(TreeSet.class)){
-								Set<String>stop_words=(Set<String>)(obj2);
-								Object obj3=fromServer.readObject();
-								System.out.println("Object 3:"+obj3.getClass());
+			this.connexion=new Socket(adressIP,port);
+			this.connexion.setSoTimeout(timeoutTime*1000);
+			this.s=new Service(this.connexion);
+			this.closeConnexion();
 
-								if(obj3.getClass().equals(String.class)){
-									String req=(String)(obj3);	
-									System.out.println("obj3");
-									System.out.println("Requete recu:"+req);
-									System.out.println("TEST STOP_WORDS==null\t:"+stop_words.size());
-									Test essai=new Test(keywords, documents, stop_words);
-
-									HashMap<Integer, Double> classement=essai.calcul(req);
-
-									toServer.writeObject(classement);
-									String msg="FIN";
-									toServer.writeObject(msg);
-									toServer.flush();
-
-									this.closeConnexion();
-								}else{
-									System.out.println("Object inattendu ");
-								}
-							}
-						}
-					}
-
-				} catch (ClassNotFoundException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-			}
-			catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-		} catch (ConnectException e) {
-			System.out.println("Problème lors de la connexion");
-			// TODO Auto-generated catch block
+		}catch (SocketException e ){
+			System.out.println("Server is not running");
+		}catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		// TODO Auto-generated catch block
-
-
 
 
 	}
-
 
 
 	public Socket getSocket(){
@@ -117,9 +48,13 @@ public class Client {
 		try {
 			this.connexion.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+
+
+	public Service getService(){
+		return this.s;
 	}
 
 
